@@ -669,8 +669,10 @@ class NullDevice:
         pass
 
 
-assert type(__builtins__) is types.ModuleType
-BUILTIN_IMPORT = __builtins__.__import__
+if type(__builtins__) is types.ModuleType:
+    BUILTIN_IMPORT = __builtins__.__import__
+else:
+    BUILTIN_IMPORT = __builtins__['__import__']
 
 
 # Support interactive user input by:
@@ -1698,10 +1700,12 @@ class PGLogger(bdb.Bdb):
         # allowing certain potentially dangerous operations.
         user_builtins = {}
 
-        assert type(__builtins__) is types.ModuleType
-        builtin_items = []
-        for k in dir(__builtins__):
-            builtin_items.append((k, getattr(__builtins__, k)))
+        if type(__builtins__) is types.ModuleType:
+            builtin_items = []
+            for k in dir(__builtins__):
+                builtin_items.append((k, getattr(__builtins__, k)))
+        else:
+            builtin_items = list(__builtins__.items())
 
         for k, v in builtin_items:
             # if k == "input":
@@ -1819,7 +1823,8 @@ class PGLogger(bdb.Bdb):
 
     def finalize(self):
         sys.stdout = self.GAE_STDOUT  # very important!
-        sys.stderr = self.ORIGINAL_STDERR
+        if hasattr(self, 'ORIGINAL_STDERR'):
+            sys.stderr = self.ORIGINAL_STDERR
 
         assert len(self.trace) <= (MAX_EXECUTED_LINES + 1)
 
