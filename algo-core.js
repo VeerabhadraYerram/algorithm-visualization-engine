@@ -238,8 +238,30 @@
         </select>
       `;
             fields.appendChild(g);
+
+            // Auto-map the field ID to the variable with the exact same name
+            State.mappings[field.id] = field.id;
         });
         refreshMappingDropdowns();
+
+        // Auto-load recommended python code
+        const fileMap = {
+            'dfs': 'dfs.py',
+            'bfs': 'bfs.py',
+            'dijkstra': 'dijkstras.py',
+            'kruskal': 'kruskals_mst.py',
+            'multistage': 'multistage_graph.py',
+            'nqueens': 'nqueens.py'
+        };
+        const filename = fileMap[State.selectedAlgo];
+        if (filename && window.optLiveFrontend) {
+            fetch(`recommended_algorithms/${filename}`)
+                .then(res => res.text())
+                .then(text => {
+                    window.optLiveFrontend.pyInputSetValue(text);
+                })
+                .catch(err => console.error("Failed to load recommended algorithm", err));
+        }
     }
 
     function refreshMappingDropdowns() {
@@ -257,8 +279,18 @@
                 sel.appendChild(o);
             });
             // Restore previous selection if still valid
-            if (names.includes(prev)) sel.value = prev;
-            else sel.value = '';
+            if (names.includes(prev)) {
+                sel.value = prev;
+            } else if (prev) {
+                // Auto-mapped variable hasn't been executed yet, show it in the dropdown
+                const o = document.createElement('option');
+                o.value = prev;
+                o.textContent = prev + ' (auto-mapped)';
+                sel.appendChild(o);
+                sel.value = prev;
+            } else {
+                sel.value = '';
+            }
 
             sel.onchange = (ev) => {
                 State.mappings[fid] = ev.target.value;
